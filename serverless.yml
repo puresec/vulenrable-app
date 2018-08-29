@@ -1,0 +1,42 @@
+service: accenture-demo-app
+
+custom:
+  table_name: "converter_logs"
+
+provider:
+  name: aws
+  runtime: python2.7
+  iamRoleStatements:
+  - Effect: 'Allow'
+    Action:
+      - 'dynamodb:*'
+    Resource:
+      Fn::GetAtt: [DynamoDbTable, Arn]
+
+
+functions:
+  convert:
+    handler: handler.convert
+    events:
+      - http:
+          path: convert
+          method: get
+    environment:
+      HOME: /var/task
+      TABLE_NAME: ${self:custom.table_name}
+
+resources:
+  Resources:
+    DynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: ${self:custom.table_name}
+        KeySchema:
+          - AttributeName: requestid
+            KeyType: HASH
+        AttributeDefinitions:
+          - AttributeName: requestid
+            AttributeType: S
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
